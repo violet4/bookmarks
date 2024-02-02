@@ -7,6 +7,9 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+sqlalchemy-addons = {path = "/home/violet/git/violet/python/sqlalchemy_addons"}
+fastapi = "^0.109.0"
+pydantic = "^2.6.0"
 
 
 [build-system]
