@@ -1,5 +1,3 @@
-""" Here's the HTTP API using FastAPI and Pydantic, with specified versions and endpoints for adding, removing, and editing bookmarks:
-"""
 from enum import StrEnum
 
 import sqlalchemy as sa
@@ -84,7 +82,7 @@ app = fastapi.FastAPI()
 async def create_bookmark(
     bookmark: BookmarkCreate, session: AsyncSession = Depends(get_db_session)
 ):
-    db_bookmark = Bookmark(**bookmark.dict())
+    db_bookmark = Bookmark(**bookmark.model_dump())
     session.add(db_bookmark)
     await session.commit()
     await session.refresh(db_bookmark)
@@ -109,7 +107,7 @@ async def update_bookmark(
     session: AsyncSession = Depends(get_db_session),
 ):
     db_bookmark = await get_bookmark(bookmark_id, session)
-    update_data = bookmark.dict(exclude_unset=True)
+    update_data = bookmark.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_bookmark, key, value)
     session.add(db_bookmark)
@@ -125,15 +123,3 @@ async def delete_bookmark(bookmark_id: int, session: AsyncSession = Depends(get_
     await session.commit()
 
 app.mount("/", StaticFiles(directory='./frontend/build'), name="frontend")
-
-"""Key Points:
-
-    Specified versions: fastapi_version and pydantic_version are explicitly set.
-    Async SQLAlchemy: The database setup uses create_async_engine and an async_session for asynchronous interactions.
-    API dependencies: The get_db_session dependency provides an async database session for each endpoint.
-    Pydantic models: BookmarkBase is the base model, BookmarkCreate is used for creating bookmarks, BookmarkUpdate is used for updating (notice the id field), and BookmarkOut includes the id for the response.
-    Endpoints:
-        POST /bookmarks/: Creates a new bookmark.
-        GET /bookmarks/{bookmark_id}: Gets a bookmark by ID.
-        PUT /bookmarks/{bookmark_id}: Updates an existing bookmark.
-        `DELETE /"""
