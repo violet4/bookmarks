@@ -2,56 +2,73 @@ import React, { useState, useEffect } from 'react';
 import axios, {AxiosResponse} from 'axios';
 import { components } from './openapi';
 type BookmarkCreate = components['schemas']['BookmarkCreate'];
-type BookmarkUpdate = components['schemas']['BookmarkUpdate']; // had to add this manually
 type MediaType = components['schemas']['MediaType'];
 type Bookmark = components['schemas']['BookmarkOut'];
-type BookmarkOut = Bookmark;
+
 
 namespace api {
   const api = axios.create({ baseURL: 'http://http://127.0.0.1:8000' });
-  export const createBookmark = async (data: BookmarkCreate) => {
+  // good job specifying return types
+  export const createBookmark = async (data: components['schemas']['BookmarkCreate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.post('/bookmarks/', data);
   };
-
+  
   export const getBookmark = async (id: number): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.get(`/bookmarks/${id}`);
   };
   
+  export const updateBookmark = async (id: number, data: components['schemas']['BookmarkUpdate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
+    return await api.put(`/bookmarks/${id}/`, data);
+  };
   
-  export const updateBookmark = async (id: number, data: BookmarkUpdate) => {
-    return await api.put(`/bookmarks/${id}`, data);
+  export const deleteBookmark = async (id: number): Promise<AxiosResponse> => {
+    return await api.delete(`/bookmarks/${id}/`);
   };
-  export const deleteBookmark = async (id: number) => {
-    return await api.delete(`/bookmarks/${id}`);
-  };
+    
 }
 
 function App() {
-  const [bookmarks, setBookmarks] = useState<BookmarkOut[]>([]);
+  const [bookmarks, setBookmarks] = useState<components['schemas']['BookmarkOut'][]>([]);
 
   useEffect(() => {
     const fetchBookmarks = async () => {
-      const result = await axios.get('/bookmarks/');
-      setBookmarks(result.data);
+      // good job catching errors
+      try {
+        const response = await api.getBookmarks(); // uses api.getBookmarks but never defined it..
+        setBookmarks(response.data);
+      } catch (error) {
+        console.error('Error fetching bookmarks:', error);
+      }
     };
     fetchBookmarks();
   }, []);
 
-  const createBookmark = async (bookmarkData: BookmarkCreate) => {
-    const result = await api.createBookmark(bookmarkData);
-    setBookmarks([...bookmarks, result.data]);
+  const createBookmark = async (newBookmark: components['schemas']['BookmarkCreate']) => {
+    // good job catching errors
+    try {
+      const response = await api.createBookmark(newBookmark);
+      setBookmarks([...bookmarks, response.data]);
+    } catch (error) {
+      console.error('Error creating bookmark:', error);
+    }
   };
 
-  const updateBookmark = async (bookmarkData: BookmarkUpdate) => {
-    const result = await api.updateBookmark(bookmarkData.id, bookmarkData);
-    setBookmarks(
-      bookmarks.map((b) => (b.id === result.data.id ? result.data : b))
-    );
+  const updateBookmark = async (updatedBookmark: components['schemas']['BookmarkUpdate']) => {
+    try {
+      const response = await api.updateBookmark(updatedBookmark.id, updatedBookmark);
+      setBookmarks(bookmarks.map(b => b.id === updatedBookmark.id ? response.data : b));
+    } catch (error) {
+       console.error('Error updating bookmark:', error);
+    }
   };
 
   const deleteBookmark = async (bookmarkId: number) => {
-    await api.deleteBookmark(bookmarkId);
-    setBookmarks(bookmarks.filter((b) => b.id !== bookmarkId));
+    try {
+      await api.deleteBookmark(bookmarkId);
+      setBookmarks(bookmarks.filter((bookmark) => bookmark.id !== bookmarkId));
+    } catch (error) {
+      console.error('Error deleting bookmark:', error);
+    }
   };
 
   return (
@@ -82,28 +99,17 @@ const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete }) => {
 };
 
 
-interface BookmarkItemProps { // model A didn't update with onUpdate
+interface BookmarkItemProps {
   bookmark: Bookmark;
   onDelete: (bookmarkId: number) => void;
 }
 
-const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete, onUpdate }) => {
-  // model a lazed out here..
+const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete }) => {
 
   return (
     <li>
       {bookmark.name} ({bookmark.media_type}) - Bookmarks: {bookmark.bookmark.join(', ')}
       <button onClick={() => onDelete(bookmark.id)}>Delete</button>
-      {/* aside from the fact that this isn't fully implemented, this has its merits.. */}
-      {isEditing && (
-        <BookmarkForm
-          initialValues={bookmark} // Provide initial values for editing
-          onSubmit={(updatedData) => {
-            onUpdate(updatedData);
-            setIsEditing(false);
-          }}
-        />
-      )}
     </li>
   );
 };
@@ -127,7 +133,6 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({ onSubmit }) => {
     };
     onSubmit(bookmarkData);
   };
-
 
   return (
     <form onSubmit={handleSubmit}>
