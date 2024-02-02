@@ -11,6 +11,8 @@ import fastapi
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 
+from .models import Bookmark
+
 # FastAPI and Pydantic versions
 fastapi_version = "0.90.1"
 pydantic_version = "1.10.4"
@@ -59,7 +61,7 @@ async def get_db_session():
 
 
 async def get_bookmark(bookmark_id: int, session: AsyncSession):
-    bookmark = await session.get(Bookmarks, bookmark_id)
+    bookmark = await session.get(Bookmark, bookmark_id)
     if bookmark is None:
         raise HTTPException(status_code=404, detail="Bookmark not found")
     return bookmark
@@ -73,7 +75,7 @@ app = fastapi.FastAPI()
 async def create_bookmark(
     bookmark: BookmarkCreate, session: AsyncSession = Depends(get_db_session)
 ):
-    db_bookmark = Bookmarks(**bookmark.dict())
+    db_bookmark = Bookmark(**bookmark.dict())
     session.add(db_bookmark)
     await session.commit()
     await session.refresh(db_bookmark)
