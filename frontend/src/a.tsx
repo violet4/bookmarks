@@ -1,61 +1,51 @@
-
-// src/App.tsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
+import axios, {AxiosResponse} from 'axios';
 import { components } from './openapi';
-// import BookmarkList from './components/BookmarkList';
-// import BookmarkForm from './components/BookmarkForm';
 type BookmarkCreate = components['schemas']['BookmarkCreate'];
+type BookmarkUpdate = components['schemas']['BookmarkUpdate']; // had to add this manually
 type MediaType = components['schemas']['MediaType'];
 type Bookmark = components['schemas']['BookmarkOut'];
-
+type BookmarkOut = Bookmark;
 
 namespace api {
-  const api = axios.create({ baseURL: 'http://127.0.0.1:8000' });
-  export const createBookmark = async (data: components['schemas']['BookmarkCreate']) => {
+  const api = axios.create({ baseURL: 'http://http://127.0.0.1:8000' });
+  export const createBookmark = async (data: BookmarkCreate) => {
     return await api.post('/bookmarks/', data);
   };
-  
-  export const getBookmarks = async () => {
-    return await api.get<components['schemas']['BookmarkOut'][]>('/bookmarks/');
-  };
-  export const updateBookmark = async (
-    id: number,
-    data: components['schemas']['BookmarkUpdate']
-  ) => {
-    return await api.put(`/bookmarks/${id}/`, data);
+
+  export const getBookmark = async (id: number): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
+    return await api.get(`/bookmarks/${id}`);
   };
   
+  
+  export const updateBookmark = async (id: number, data: BookmarkUpdate) => {
+    return await api.put(`/bookmarks/${id}`, data);
+  };
   export const deleteBookmark = async (id: number) => {
-    return await api.delete(`/bookmarks/${id}/`);
+    return await api.delete(`/bookmarks/${id}`);
   };
-  
 }
 
-
 function App() {
-  const [bookmarks, setBookmarks] = useState<components['schemas']['BookmarkOut'][]>([]);
+  const [bookmarks, setBookmarks] = useState<BookmarkOut[]>([]);
 
   useEffect(() => {
     const fetchBookmarks = async () => {
-      const result = await api.getBookmarks();
+      const result = await axios.get('/bookmarks/');
       setBookmarks(result.data);
     };
     fetchBookmarks();
   }, []);
 
-  const createBookmark = async (data: components['schemas']['BookmarkCreate']) => {
-    const result = await api.createBookmark(data);
+  const createBookmark = async (bookmarkData: BookmarkCreate) => {
+    const result = await api.createBookmark(bookmarkData);
     setBookmarks([...bookmarks, result.data]);
   };
-  const updateBookmark = async (
-    id: number,
-    data: components['schemas']['BookmarkUpdate']
-  ) => {
-    const result = await api.updateBookmark(id, data);
+
+  const updateBookmark = async (bookmarkData: BookmarkUpdate) => {
+    const result = await api.updateBookmark(bookmarkData.id, bookmarkData);
     setBookmarks(
-      bookmarks.map((b) => (b.id === id ? result.data : b))
+      bookmarks.map((b) => (b.id === result.data.id ? result.data : b))
     );
   };
 
@@ -75,9 +65,6 @@ function App() {
 
 export default App;
 
-// src/components/BookmarkList.tsx
-// import React from 'react';
-// import BookmarkItem from './BookmarkItem';
 
 interface BookmarkListProps {
   bookmarks: Bookmark[];
@@ -94,32 +81,33 @@ const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete }) => {
   );
 };
 
-// export default BookmarkList;
 
-// src/components/BookmarkItem.tsx
-// import React from 'react';
-
-interface BookmarkItemProps {
+interface BookmarkItemProps { // model A didn't update with onUpdate
   bookmark: Bookmark;
   onDelete: (bookmarkId: number) => void;
 }
 
-const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete }) => {
-  // ... handle editing logic (omitted for brevity)
+const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete, onUpdate }) => {
+  // model a lazed out here..
 
   return (
     <li>
       {bookmark.name} ({bookmark.media_type}) - Bookmarks: {bookmark.bookmark.join(', ')}
       <button onClick={() => onDelete(bookmark.id)}>Delete</button>
-      {/* ... editing controls */}
+      {/* aside from the fact that this isn't fully implemented, this has its merits.. */}
+      {isEditing && (
+        <BookmarkForm
+          initialValues={bookmark} // Provide initial values for editing
+          onSubmit={(updatedData) => {
+            onUpdate(updatedData);
+            setIsEditing(false);
+          }}
+        />
+      )}
     </li>
   );
 };
 
-// export default BookmarkItem;
-
-// src/components/BookmarkForm.tsx
-// import React, { useState } from 'react';
 
 interface BookmarkFormProps {
   onSubmit: (bookmark: Bookmark) => void;
@@ -127,40 +115,23 @@ interface BookmarkFormProps {
 
 const BookmarkForm: React.FC<BookmarkFormProps> = ({ onSubmit }) => {
   const [name, setName] = useState('');
-  const [mediaType, setMediaType] = useState<MediaType>('tv_show');
+  const [mediaType, setMediaType] = useState<MediaType>('podcast');
   const [bookmarkString, setBookmarkString] = useState('');
 
-  // const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault();
-  //   const bookmarkData = {
-  //     name,
-  //     media_type: mediaType,
-  //     bookmark: bookmarkString.split(',').map(Number),
-  //   };
-  //   onSubmit(bookmarkData);
-  //   // ... reset form fields
-  // };
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const bookmarkData: components['schemas']['BookmarkCreate'] = {
+    const bookmarkData: BookmarkCreate = {
       name,
-      media_type: mediaType as components['schemas']['MediaType'], // Cast to valid MediaType
+      media_type: mediaType,
       bookmark: bookmarkString.split(',').map(Number),
     };
     onSubmit(bookmarkData);
-    // ... reset form fields
   };
 
-  // ... input change handlers
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* ... input fields and submit button */}
+      <button type="submit">Submit</button>
     </form>
   );
 };
-
-// export default BookmarkForm;
-
-
-// Remember to fill in the API call functions, error handling,

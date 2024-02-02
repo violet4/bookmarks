@@ -1,8 +1,5 @@
-// src/App.tsx
 import React, { useState, useEffect } from 'react';
 import axios, {AxiosResponse} from 'axios';
-// import BookmarkList from './components/BookmarkList';
-// import BookmarkForm from './components/BookmarkForm';
 import { components } from './openapi';
 type BookmarkCreate = components['schemas']['BookmarkCreate'];
 type MediaType = components['schemas']['MediaType'];
@@ -11,34 +8,73 @@ type Bookmark = components['schemas']['BookmarkOut'];
 
 namespace api {
   const api = axios.create({ baseURL: 'http://http://127.0.0.1:8000' });
-
+  // good job specifying return types
   export const createBookmark = async (data: components['schemas']['BookmarkCreate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.post('/bookmarks/', data);
   };
-  // Cannot find namespace 'axios'.ts(2503)
+  
   export const getBookmark = async (id: number): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.get(`/bookmarks/${id}`);
   };
   
+  export const updateBookmark = async (id: number, data: components['schemas']['BookmarkUpdate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
+    return await api.put(`/bookmarks/${id}/`, data);
+  };
+  
+  export const deleteBookmark = async (id: number): Promise<AxiosResponse> => {
+    return await api.delete(`/bookmarks/${id}/`);
+  };
+    
 }
 
 function App() {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [bookmarks, setBookmarks] = useState<components['schemas']['BookmarkOut'][]>([]);
 
   useEffect(() => {
     const fetchBookmarks = async () => {
-      const result = await axios.get('/bookmarks/');
-      setBookmarks(result.data);
+      // good job catching errors
+      try {
+        const response = await api.getBookmarks(); // uses api.getBookmarks but never defined it..
+        setBookmarks(response.data);
+      } catch (error) {
+        console.error('Error fetching bookmarks:', error);
+      }
     };
     fetchBookmarks();
   }, []);
 
-  // ... other API call functions (createBookmark, updateBookmark, deleteBookmark)
+  const createBookmark = async (newBookmark: components['schemas']['BookmarkCreate']) => {
+    // good job catching errors
+    try {
+      const response = await api.createBookmark(newBookmark);
+      setBookmarks([...bookmarks, response.data]);
+    } catch (error) {
+      console.error('Error creating bookmark:', error);
+    }
+  };
+
+  const updateBookmark = async (updatedBookmark: components['schemas']['BookmarkUpdate']) => {
+    try {
+      const response = await api.updateBookmark(updatedBookmark.id, updatedBookmark);
+      setBookmarks(bookmarks.map(b => b.id === updatedBookmark.id ? response.data : b));
+    } catch (error) {
+       console.error('Error updating bookmark:', error);
+    }
+  };
+
+  const deleteBookmark = async (bookmarkId: number) => {
+    try {
+      await api.deleteBookmark(bookmarkId);
+      setBookmarks(bookmarks.filter((bookmark) => bookmark.id !== bookmarkId));
+    } catch (error) {
+      console.error('Error deleting bookmark:', error);
+    }
+  };
 
   return (
     <div>
       <h1>Bookmarks</h1>
-      <BookmarkList bookmarks={bookmarks} onDelete={deleteBookmark} />
+      <BookmarkList bookmarks={bookmarks} onDelete={deleteBookmark} onUpdate={updateBookmark} />
       <BookmarkForm onSubmit={createBookmark} />
     </div>
   );
@@ -46,9 +82,6 @@ function App() {
 
 export default App;
 
-// src/components/BookmarkList.tsx
-// import React from 'react';
-// import BookmarkItem from './BookmarkItem';
 
 interface BookmarkListProps {
   bookmarks: Bookmark[];
@@ -65,10 +98,6 @@ const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete }) => {
   );
 };
 
-// export default BookmarkList;
-
-// src/components/BookmarkItem.tsx
-// import React from 'react';
 
 interface BookmarkItemProps {
   bookmark: Bookmark;
@@ -76,21 +105,15 @@ interface BookmarkItemProps {
 }
 
 const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete }) => {
-  // ... handle editing logic (omitted for brevity)
 
   return (
     <li>
       {bookmark.name} ({bookmark.media_type}) - Bookmarks: {bookmark.bookmark.join(', ')}
       <button onClick={() => onDelete(bookmark.id)}>Delete</button>
-      {/* ... editing controls */}
     </li>
   );
 };
 
-// export default BookmarkItem;
-
-// src/components/BookmarkForm.tsx
-// import React, { useState } from 'react';
 
 interface BookmarkFormProps {
   onSubmit: (bookmark: Bookmark) => void;
@@ -98,7 +121,7 @@ interface BookmarkFormProps {
 
 const BookmarkForm: React.FC<BookmarkFormProps> = ({ onSubmit }) => {
   const [name, setName] = useState('');
-  const [mediaType, setMediaType] = useState<MediaType>('podcast'); // Set a default media type
+  const [mediaType, setMediaType] = useState<MediaType>('podcast');
   const [bookmarkString, setBookmarkString] = useState('');
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -109,20 +132,11 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({ onSubmit }) => {
       bookmark: bookmarkString.split(',').map(Number),
     };
     onSubmit(bookmarkData);
-    // ... reset form fields
   };
-
-  // ... input change handlers
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* ... input fields, consider adding select for mediaType */}
       <button type="submit">Submit</button>
     </form>
   );
 };
-
-// export default BookmarkForm;
-
-
-// Remember to fill in the API call functions, error handling,
