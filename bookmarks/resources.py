@@ -4,11 +4,14 @@ from enum import StrEnum
 
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.future import select
 from sqlalchemy.orm import sessionmaker
 from typing import List, Optional, Union
 
 import fastapi
 from fastapi import Depends, HTTPException
+from fastapi.staticfiles import StaticFiles
+
 from pydantic import BaseModel
 
 from .models import Bookmark
@@ -51,7 +54,7 @@ class BookmarkOut(BookmarkBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # API dependencies
@@ -66,6 +69,12 @@ async def get_bookmark(bookmark_id: int, session: AsyncSession):
         raise HTTPException(status_code=404, detail="Bookmark not found")
     return bookmark
 
+async def get_all_bookmarks(session: AsyncSession):
+    async with session.begin():
+        query = select(Bookmark)
+        result = await session.execute(query)
+        bookmarks = result.scalars().all()
+        return [BookmarkOut.model_validate(b) for b in bookmarks]
 
 # API endpoints
 app = fastapi.FastAPI()
@@ -80,6 +89,12 @@ async def create_bookmark(
     await session.commit()
     await session.refresh(db_bookmark)
     return db_bookmark
+
+
+@app.get("/bookmarks/", response_model=List[BookmarkOut])
+async def get_bookmarks(session: AsyncSession = Depends(get_db_session)):
+    bookmarks = await get_all_bookmarks(session)
+    return bookmarks
 
 
 @app.get("/bookmarks/{bookmark_id}", response_model=BookmarkOut)
@@ -109,6 +124,7 @@ async def delete_bookmark(bookmark_id: int, session: AsyncSession = Depends(get_
     await session.delete(bookmark)
     await session.commit()
 
+app.mount("/", StaticFiles(directory='./frontend/build'), name="frontend")
 
 """Key Points:
 

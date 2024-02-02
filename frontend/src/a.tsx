@@ -7,8 +7,12 @@ type Bookmark = components['schemas']['BookmarkOut'];
 
 
 namespace api {
-  const api = axios.create({ baseURL: 'http://http://127.0.0.1:8000' });
-  // good job specifying return types
+  const api = axios.create({ baseURL: 'http://127.0.0.1:8000' });
+
+  export const getBookmarks = async (): Promise<AxiosResponse<components['schemas']['BookmarkOut'][]>> => {
+    return await api.get(`/bookmarks/`);
+  };
+
   export const createBookmark = async (data: components['schemas']['BookmarkCreate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.post('/bookmarks/', data);
   };
@@ -16,13 +20,13 @@ namespace api {
   export const getBookmark = async (id: number): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.get(`/bookmarks/${id}`);
   };
-  
+
   export const updateBookmark = async (id: number, data: components['schemas']['BookmarkUpdate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
-    return await api.put(`/bookmarks/${id}/`, data);
+    return await api.put(`/bookmarks/${id}`, data);
   };
   
   export const deleteBookmark = async (id: number): Promise<AxiosResponse> => {
-    return await api.delete(`/bookmarks/${id}/`);
+    return await api.delete(`/bookmarks/${id}`);
   };
     
 }
@@ -86,6 +90,7 @@ export default App;
 interface BookmarkListProps {
   bookmarks: Bookmark[];
   onDelete: (bookmarkId: number) => void;
+  onUpdate: (updatedBookmark: components['schemas']['BookmarkUpdate']) => Promise<void>;
 }
 
 const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete }) => {
@@ -116,7 +121,7 @@ const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete }) => {
 
 
 interface BookmarkFormProps {
-  onSubmit: (bookmark: Bookmark) => void;
+  onSubmit: (bookmark: BookmarkCreate) => void;
 }
 
 const BookmarkForm: React.FC<BookmarkFormProps> = ({ onSubmit }) => {
