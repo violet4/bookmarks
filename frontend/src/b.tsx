@@ -1,73 +1,44 @@
-
 // src/App.tsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
-import { components } from './openapi';
+import axios, {AxiosResponse} from 'axios';
 // import BookmarkList from './components/BookmarkList';
 // import BookmarkForm from './components/BookmarkForm';
+import { components } from './openapi';
 type BookmarkCreate = components['schemas']['BookmarkCreate'];
 type MediaType = components['schemas']['MediaType'];
 type Bookmark = components['schemas']['BookmarkOut'];
 
 
 namespace api {
-  const api = axios.create({ baseURL: 'http://127.0.0.1:8000' });
-  export const createBookmark = async (data: components['schemas']['BookmarkCreate']) => {
+  const api = axios.create({ baseURL: 'http://http://127.0.0.1:8000' });
+
+  export const createBookmark = async (data: components['schemas']['BookmarkCreate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.post('/bookmarks/', data);
   };
-  
-  export const getBookmarks = async () => {
-    return await api.get<components['schemas']['BookmarkOut'][]>('/bookmarks/');
-  };
-  export const updateBookmark = async (
-    id: number,
-    data: components['schemas']['BookmarkUpdate']
-  ) => {
-    return await api.put(`/bookmarks/${id}/`, data);
-  };
-  
-  export const deleteBookmark = async (id: number) => {
-    return await api.delete(`/bookmarks/${id}/`);
+  // Cannot find namespace 'axios'.ts(2503)
+  export const getBookmark = async (id: number): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
+    return await api.get(`/bookmarks/${id}`);
   };
   
 }
 
-
 function App() {
-  const [bookmarks, setBookmarks] = useState<components['schemas']['BookmarkOut'][]>([]);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
 
   useEffect(() => {
     const fetchBookmarks = async () => {
-      const result = await api.getBookmarks();
+      const result = await axios.get('/bookmarks/');
       setBookmarks(result.data);
     };
     fetchBookmarks();
   }, []);
 
-  const createBookmark = async (data: components['schemas']['BookmarkCreate']) => {
-    const result = await api.createBookmark(data);
-    setBookmarks([...bookmarks, result.data]);
-  };
-  const updateBookmark = async (
-    id: number,
-    data: components['schemas']['BookmarkUpdate']
-  ) => {
-    const result = await api.updateBookmark(id, data);
-    setBookmarks(
-      bookmarks.map((b) => (b.id === id ? result.data : b))
-    );
-  };
-
-  const deleteBookmark = async (bookmarkId: number) => {
-    await api.deleteBookmark(bookmarkId);
-    setBookmarks(bookmarks.filter((b) => b.id !== bookmarkId));
-  };
+  // ... other API call functions (createBookmark, updateBookmark, deleteBookmark)
 
   return (
     <div>
       <h1>Bookmarks</h1>
-      <BookmarkList bookmarks={bookmarks} onDelete={deleteBookmark} onUpdate={updateBookmark} />
+      <BookmarkList bookmarks={bookmarks} onDelete={deleteBookmark} />
       <BookmarkForm onSubmit={createBookmark} />
     </div>
   );
@@ -127,24 +98,14 @@ interface BookmarkFormProps {
 
 const BookmarkForm: React.FC<BookmarkFormProps> = ({ onSubmit }) => {
   const [name, setName] = useState('');
-  const [mediaType, setMediaType] = useState<MediaType>('tv_show');
+  const [mediaType, setMediaType] = useState<MediaType>('podcast'); // Set a default media type
   const [bookmarkString, setBookmarkString] = useState('');
 
-  // const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault();
-  //   const bookmarkData = {
-  //     name,
-  //     media_type: mediaType,
-  //     bookmark: bookmarkString.split(',').map(Number),
-  //   };
-  //   onSubmit(bookmarkData);
-  //   // ... reset form fields
-  // };
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const bookmarkData: components['schemas']['BookmarkCreate'] = {
+    const bookmarkData: BookmarkCreate = {
       name,
-      media_type: mediaType as components['schemas']['MediaType'], // Cast to valid MediaType
+      media_type: mediaType,
       bookmark: bookmarkString.split(',').map(Number),
     };
     onSubmit(bookmarkData);
@@ -155,7 +116,8 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({ onSubmit }) => {
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* ... input fields and submit button */}
+      {/* ... input fields, consider adding select for mediaType */}
+      <button type="submit">Submit</button>
     </form>
   );
 };
