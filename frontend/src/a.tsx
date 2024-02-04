@@ -127,18 +127,20 @@ const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete, onUpdat
     };
 
     try {
-      const response = await api.updateBookmark(bookmark.id, updatedData); // Assuming api.updateBookmark returns AxiosResponse
-      if (response.status === 200) {
-        onUpdate(bookmark.id, updatedData);
-        setIsEditing(false); 
+      const response = await api.updateBookmark(bookmark.id, updatedData);
+      if (response.status === 200) { 
+        // Update bookmarks state in App component
+        onUpdate(bookmark.id, updatedData); 
+        setIsEditing(false);
       } else {
-        console.error('Update failed with status:', response.status);
+        // Handle cases where status code is not 200
+        console.error('Update failed with status code:', response.status);
       }
     } catch (error) {
-      // Handle potential errors from the update request
-      console.error('Update bookmark failed:', error); 
+      console.error('Update bookmark failed:', error);
     }
   };
+
   return (
     <li>
       {isEditing ? (
