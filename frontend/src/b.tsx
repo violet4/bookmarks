@@ -58,13 +58,12 @@ function App() {
     }
   };
 
-  const updateBookmark = async (updatedBookmark: components['schemas']['BookmarkUpdate']) => {
-    try {
-      const response = await api.updateBookmark(updatedBookmark.id, updatedBookmark);
-      setBookmarks(bookmarks.map(b => b.id === updatedBookmark.id ? response.data : b));
-    } catch (error) {
-       console.error('Error updating bookmark:', error);
-    }
+  const updateBookmark = (bookmarkId: number, updatedData: components['schemas']['BookmarkCreate']) => {
+    setBookmarks((prevBookmarks) =>
+      prevBookmarks.map((bookmark) =>
+        bookmark.id === bookmarkId ? { ...bookmark, ...updatedData } : bookmark
+      )
+    );
   };
 
   const deleteBookmark = async (bookmarkId: number) => {
@@ -91,14 +90,14 @@ export default App;
 interface BookmarkListProps {
   bookmarks: Bookmark[];
   onDelete: (bookmarkId: number) => void;
-  onUpdate: (updatedBookmark: components['schemas']['BookmarkUpdate']) => Promise<void>;
+  onUpdate: (bookmarkId: number, updatedBookmark: components['schemas']['BookmarkCreate']) => void;
 }
 
-const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete }) => {
+const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete, onUpdate }) => {
   return (
     <ul>
       {bookmarks.map((bookmark) => (
-        <BookmarkItem key={bookmark.id} bookmark={bookmark} onDelete={onDelete} />
+        <BookmarkItem key={bookmark.id} bookmark={bookmark} onDelete={onDelete} onUpdate={onUpdate} />
       ))}
     </ul>
   );
@@ -108,9 +107,10 @@ const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete }) => {
 interface BookmarkItemProps {
   bookmark: Bookmark;
   onDelete: (bookmarkId: number) => void;
+  onUpdate: (bookmarkId: number, updatedBookmark: components['schemas']['BookmarkCreate']) => void;
 }
 
-const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete }) => {
+const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(bookmark.name);
   const [editBookmark, setEditBookmark] = useState(bookmark.bookmark.join(','));
@@ -127,10 +127,17 @@ const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete }) => {
     };
 
     try {
-      await api.updateBookmark(bookmark.id, updatedData);
-      setIsEditing(false); 
+      const response = await api.updateBookmark(bookmark.id, updatedData);
+      if (response.status === 200) { 
+        // Update bookmarks state in App component
+        onUpdate(bookmark.id, updatedData); 
+        setIsEditing(false);
+      } else {
+        // Handle cases where status code is not 200
+        console.error('Update failed with status code:', response.status);
+      }
     } catch (error) {
-      console.error('Update bookmark failed:', error); 
+      console.error('Update bookmark failed:', error);
     }
   };
 
