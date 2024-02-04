@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 
-import TheApp from './a';
+import TheApp from './b';
 
 function App() {
   return (

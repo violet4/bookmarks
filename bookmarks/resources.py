@@ -1,10 +1,9 @@
 from enum import StrEnum
 
-import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.future import select
 from sqlalchemy.orm import sessionmaker
-from typing import List, Optional, Union
+from typing import List
 
 import fastapi
 from fastapi import Depends, HTTPException
@@ -55,9 +54,8 @@ class BookmarkOut(BookmarkBase):
         from_attributes = True
 
 
-# API dependencies
 async def get_db_session():
-    async with async_session() as session:
+    async with async_session() as session: # type: ignore
         yield session
 
 
@@ -74,7 +72,6 @@ async def get_all_bookmarks(session: AsyncSession):
         bookmarks = result.scalars().all()
         return [BookmarkOut.model_validate(b) for b in bookmarks]
 
-# API endpoints
 app = fastapi.FastAPI()
 
 
