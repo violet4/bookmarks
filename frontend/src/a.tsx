@@ -94,11 +94,11 @@ interface BookmarkListProps {
   onUpdate: (updatedBookmark: components['schemas']['BookmarkUpdate']) => Promise<void>;
 }
 
-const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete, onUpdate }) => {
+const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete }) => {
   return (
     <ul>
       {bookmarks.map((bookmark) => (
-        <BookmarkItem key={bookmark.id} bookmark={bookmark} onDelete={onDelete} onUpdate={onUpdate} />
+        <BookmarkItem key={bookmark.id} bookmark={bookmark} onDelete={onDelete} />
       ))}
     </ul>
   );
@@ -108,31 +108,29 @@ const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete, onUpda
 interface BookmarkItemProps {
   bookmark: Bookmark;
   onDelete: (bookmarkId: number) => void;
-  onUpdate: (updatedBookmark: components['schemas']['BookmarkUpdate']) => Promise<void>;
 }
 
-const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete, onUpdate }) => {
+const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(bookmark.name);
-  // ignored explicit instruction.
-  const [mediaType, setMediaType] = useState(bookmark.media_type);
-  const [bookmarksInput, setBookmarksInput] = useState(bookmark.bookmark.join(','));
+  const [editName, setEditName] = useState(bookmark.name);
+  const [editBookmark, setEditBookmark] = useState(bookmark.bookmark.join(','));
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
 
   const handleSave = async () => {
-    const updatedBookmark: components['schemas']['BookmarkCreate'] = {
-      name,
-      media_type: mediaType,
-      bookmark: bookmarksInput.split(',').map(Number),
+    const updatedData: components['schemas']['BookmarkCreate'] = {
+      name: editName,
+      media_type: bookmark.media_type, // Assuming we don't edit media_type
+      bookmark: editBookmark.split(',').map(Number),
     };
 
     try {
-      const response = await api.updateBookmark(bookmark.id, updatedBookmark);
-      if (response.status===200) {
-        onUpdate(response.data as components['schemas']['BookmarkUpdate']);
-        setIsEditing(false);
-      }
+      await api.updateBookmark(bookmark.id, updatedData);
+      setIsEditing(false); 
     } catch (error) {
-      console.error('Error updating bookmark:', error);
+      console.error('Update bookmark failed:', error); 
     }
   };
 
@@ -140,27 +138,20 @@ const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete, onUpdat
     <li>
       {isEditing ? (
         <>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
-          <select value={mediaType} onChange={(e) => setMediaType(e.target.value as MediaType)}>
-            <option value="podcast">Podcast</option>
-            <option value="tv_show">TV Show</option>
-            <option value="book">Book</option>
-            <option value="other">Other</option>
-          </select>
-          <input type="text" value={bookmarksInput} onChange={(e) => setBookmarksInput(e.target.value)} />
+          <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} />
+          <input type="text" value={editBookmark} onChange={(e) => setEditBookmark(e.target.value)} />
           <button onClick={handleSave}>Save</button>
         </>
       ) : (
         <>
           {bookmark.name} ({bookmark.media_type}) - Bookmarks: {bookmark.bookmark.join(',')}
-          <button onClick={() => setIsEditing(true)}>Edit</button> 
+          <button onClick={handleEdit}>Edit</button>
           <button onClick={() => onDelete(bookmark.id)}>Delete</button>
         </>
       )}
     </li>
   );
 };
-
 
 interface BookmarkFormProps {
   onSubmit: (bookmark: BookmarkCreate) => void;
