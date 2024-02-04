@@ -22,7 +22,7 @@ namespace api {
     return await api.get(`/bookmarks/${id}`);
   };
 
-  export const updateBookmark = async (id: number, data: components['schemas']['BookmarkUpdate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
+  export const updateBookmark = async (id: number, data: components['schemas']['BookmarkCreate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.put(`/bookmarks/${id}`, data);
   };
   
@@ -111,14 +111,47 @@ interface BookmarkItemProps {
 }
 
 const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(bookmark.name);
+  const [editBookmark, setEditBookmark] = useState(bookmark.bookmark.join(','));
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    const updatedData: components['schemas']['BookmarkCreate'] = {
+      name: editName,
+      media_type: bookmark.media_type, // Assuming we don't edit media_type
+      bookmark: editBookmark.split(',').map(Number),
+    };
+
+    try {
+      await api.updateBookmark(bookmark.id, updatedData);
+      setIsEditing(false); 
+    } catch (error) {
+      console.error('Update bookmark failed:', error); 
+    }
+  };
+
   return (
     <li>
-      {bookmark.name} ({bookmark.media_type}) - Bookmarks: {bookmark.bookmark.join(', ')}
-      <button onClick={() => onDelete(bookmark.id)}>Delete</button>
+      {isEditing ? (
+        <>
+          <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} />
+          <input type="text" value={editBookmark} onChange={(e) => setEditBookmark(e.target.value)} />
+          <button onClick={handleSave}>Save</button>
+        </>
+      ) : (
+        <>
+          {bookmark.name} ({bookmark.media_type}) - Bookmarks: {bookmark.bookmark.join(',')}
+          <button onClick={handleEdit}>Edit</button>
+          <button onClick={() => onDelete(bookmark.id)}>Delete</button>
+        </>
+      )}
     </li>
   );
 };
-
 
 interface BookmarkFormProps {
   onSubmit: (bookmark: BookmarkCreate) => void;

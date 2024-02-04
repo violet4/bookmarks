@@ -22,7 +22,7 @@ namespace api {
     return await api.get(`/bookmarks/${id}`);
   };
 
-  export const updateBookmark = async (id: number, data: components['schemas']['BookmarkUpdate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
+  export const updateBookmark = async (id: number, data: components['schemas']['BookmarkCreate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.put(`/bookmarks/${id}`, data);
   };
   
@@ -94,11 +94,11 @@ interface BookmarkListProps {
   onUpdate: (updatedBookmark: components['schemas']['BookmarkUpdate']) => Promise<void>;
 }
 
-const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete }) => {
+const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete, onUpdate }) => {
   return (
     <ul>
       {bookmarks.map((bookmark) => (
-        <BookmarkItem key={bookmark.id} bookmark={bookmark} onDelete={onDelete} />
+        <BookmarkItem key={bookmark.id} bookmark={bookmark} onDelete={onDelete} onUpdate={onUpdate} />
       ))}
     </ul>
   );
@@ -108,13 +108,55 @@ const BookmarkList: React.FC<BookmarkListProps> = ({ bookmarks, onDelete }) => {
 interface BookmarkItemProps {
   bookmark: Bookmark;
   onDelete: (bookmarkId: number) => void;
+  onUpdate: (updatedBookmark: components['schemas']['BookmarkUpdate']) => Promise<void>;
 }
 
-const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete }) => {
+const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(bookmark.name);
+  // ignored explicit instruction.
+  const [mediaType, setMediaType] = useState(bookmark.media_type);
+  const [bookmarksInput, setBookmarksInput] = useState(bookmark.bookmark.join(','));
+
+  const handleSave = async () => {
+    const updatedBookmark: components['schemas']['BookmarkCreate'] = {
+      name,
+      media_type: mediaType,
+      bookmark: bookmarksInput.split(',').map(Number),
+    };
+
+    try {
+      const response = await api.updateBookmark(bookmark.id, updatedBookmark);
+      if (response.status===200) {
+        onUpdate(response.data as components['schemas']['BookmarkUpdate']);
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Error updating bookmark:', error);
+    }
+  };
+
   return (
     <li>
-      {bookmark.name} ({bookmark.media_type}) - Bookmarks: {bookmark.bookmark.join(', ')}
-      <button onClick={() => onDelete(bookmark.id)}>Delete</button>
+      {isEditing ? (
+        <>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+          <select value={mediaType} onChange={(e) => setMediaType(e.target.value as MediaType)}>
+            <option value="podcast">Podcast</option>
+            <option value="tv_show">TV Show</option>
+            <option value="book">Book</option>
+            <option value="other">Other</option>
+          </select>
+          <input type="text" value={bookmarksInput} onChange={(e) => setBookmarksInput(e.target.value)} />
+          <button onClick={handleSave}>Save</button>
+        </>
+      ) : (
+        <>
+          {bookmark.name} ({bookmark.media_type}) - Bookmarks: {bookmark.bookmark.join(',')}
+          <button onClick={() => setIsEditing(true)}>Edit</button> 
+          <button onClick={() => onDelete(bookmark.id)}>Delete</button>
+        </>
+      )}
     </li>
   );
 };

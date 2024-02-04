@@ -100,7 +100,7 @@ async def get_bookmark_by_id(bookmark_id: int, session: AsyncSession = Depends(g
 @app.put("/bookmarks/{bookmark_id}", response_model=BookmarkOut)
 async def update_bookmark(
     bookmark_id: int,
-    bookmark: BookmarkUpdate,
+    bookmark: BookmarkCreate,
     session: AsyncSession = Depends(get_db_session),
 ):
     db_bookmark = await get_bookmark(bookmark_id, session)
