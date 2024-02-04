@@ -7,7 +7,8 @@ type Bookmark = components['schemas']['BookmarkOut'];
 
 
 namespace api {
-  const api = axios.create({ baseURL: 'http://127.0.0.1:8000' });
+//  const api = axios.create({ baseURL: 'http://127.0.0.1:8000' });
+  const api = axios.create();
 
   export const getBookmarks = async (): Promise<AxiosResponse<components['schemas']['BookmarkOut'][]>> => {
     return await api.get(`/bookmarks/`);
@@ -36,6 +37,7 @@ function App() {
 
   useEffect(() => {
     const fetchBookmarks = async () => {
+      // good job catching errors
       try {
         const response = await api.getBookmarks(); // uses api.getBookmarks but never defined it..
         setBookmarks(response.data);
@@ -47,6 +49,7 @@ function App() {
   }, []);
 
   const createBookmark = async (newBookmark: components['schemas']['BookmarkCreate']) => {
+    // good job catching errors
     try {
       const response = await api.createBookmark(newBookmark);
       setBookmarks([...bookmarks, response.data]);
@@ -108,7 +111,6 @@ interface BookmarkItemProps {
 }
 
 const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete }) => {
-
   return (
     <li>
       {bookmark.name} ({bookmark.media_type}) - Bookmarks: {bookmark.bookmark.join(', ')}
@@ -135,26 +137,44 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({ onSubmit }) => {
       bookmark: bookmarkString.split(',').map(Number),
     };
     onSubmit(bookmarkData);
-    // ... reset form fields
+    // ... reset the form fields after submission
+    setName(''); 
+    setMediaType('podcast'); 
+    setBookmarkString(''); 
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
+  };
+
+  const handleMediaTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setMediaType(e.target.value as MediaType); // Cast to MediaType
+  };
+
+  const handleBookmarkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBookmarkString(e.target.value);
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <label htmlFor="name">Name:</label>
-      <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-
-      <label htmlFor="media-type">Media Type:</label>
-      <select id="media-type" value={mediaType} onChange={(e) => setMediaType(e.target.value as MediaType)}>
-        <option value="podcast">Podcast</option>
-        <option value="tv_show">TV Show</option>
-        <option value="book">Book</option>
-        <option value="other">Other</option>
-      </select>
-
-      <label htmlFor="bookmark">Bookmarks (comma-separated):</label>
-      <input type="text" id="bookmark" value={bookmarkString} onChange={(e) => setBookmarkString(e.target.value)} required />
-
-      <button type="submit">Add Bookmark</button>
+      <div>
+        <label htmlFor="name">Name:</label>
+        <input type="text" id="name" value={name} onChange={handleNameChange} />
+      </div>
+      <div>
+        <label htmlFor="media-type">Media Type:</label>
+        <select id="media-type" value={mediaType} onChange={handleMediaTypeChange}>
+          <option value="podcast">Podcast</option>
+          <option value="tv_show">TV Show</option>
+          <option value="book">Book</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label htmlFor="bookmarks">Bookmarks:</label>
+        <input type="text" id="bookmarks" value={bookmarkString} onChange={handleBookmarkChange} />
+      </div>
+      <button type="submit">Submit</button>
     </form>
   );
 };
