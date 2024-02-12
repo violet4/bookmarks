@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios, {AxiosResponse} from 'axios';
 import { components } from '../openapi';
 type BookmarkCreate = components['schemas']['BookmarkCreate'];
 type MediaType = components['schemas']['MediaType'];
@@ -7,31 +6,50 @@ type Bookmark = components['schemas']['BookmarkOut'];
 
 
 namespace api {
-//  const api = axios.create({ baseURL: 'http://127.0.0.1:8000' });
-  const api = axios.create();
+  const BASE_URL = 'http://127.0.0.1:8000';
 
-  export const getBookmarks = async (): Promise<AxiosResponse<components['schemas']['BookmarkOut'][]>> => {
-    return await api.get(`/bookmarks/`);
+  const headers = {
+    'Content-Type': 'application/json',
   };
 
-  export const createBookmark = async (data: components['schemas']['BookmarkCreate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
-    return await api.post('/bookmarks/', data);
+  export const getBookmarks = async (): Promise<components['schemas']['BookmarkOut'][]> => {
+    const response = await fetch(`${BASE_URL}/bookmarks/`, { method: 'GET', headers });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json() as Promise<components['schemas']['BookmarkOut'][]>;
   };
 
-  export const getBookmark = async (id: number): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
-    return await api.get(`/bookmarks/${id}`);
+  export const createBookmark = async (data: components['schemas']['BookmarkCreate']): Promise<components['schemas']['BookmarkOut']> => {
+    const response = await fetch(`${BASE_URL}/bookmarks/`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
   };
 
-  export const updateBookmark = async (id: number, data: components['schemas']['BookmarkCreate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
-    return await api.put(`/bookmarks/${id}`, data);
+  export const getBookmark = async (id: number): Promise<components['schemas']['BookmarkOut']> => {
+    const response = await fetch(`${BASE_URL}/bookmarks/${id}`, { method: 'GET', headers });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
   };
 
-  export const deleteBookmark = async (id: number): Promise<AxiosResponse> => {
-    return await api.delete(`/bookmarks/${id}`);
+  export const updateBookmark = async (id: number, data: components['schemas']['BookmarkCreate']): Promise<components['schemas']['BookmarkOut']> => {
+    const response = await fetch(`${BASE_URL}/bookmarks/${id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
   };
 
+  export const deleteBookmark = async (id: number): Promise<void> => {
+    const response = await fetch(`${BASE_URL}/bookmarks/${id}`, { method: 'DELETE', headers });
+    if (!response.ok) throw new Error('Network response was not ok');
+    // Assuming delete requests don't return content, but adjust as necessary for your API
+  };
 }
-
 function BookmarkApp() {
   const [bookmarks, setBookmarks] = useState<components['schemas']['BookmarkOut'][]>([]);
 
@@ -39,8 +57,8 @@ function BookmarkApp() {
     const fetchBookmarks = async () => {
       // good job catching errors
       try {
-        const response = await api.getBookmarks(); // uses api.getBookmarks but never defined it..
-        setBookmarks(response.data);
+        const bookmarks = await api.getBookmarks(); // uses api.getBookmarks but never defined it..
+        setBookmarks(bookmarks);
       } catch (error) {
         console.error('Error fetching bookmarks:', error);
       }
@@ -51,8 +69,8 @@ function BookmarkApp() {
   const createBookmark = async (newBookmark: components['schemas']['BookmarkCreate']) => {
     // good job catching errors
     try {
-      const response = await api.createBookmark(newBookmark);
-      setBookmarks([...bookmarks, response.data]);
+      const bookmark = await api.createBookmark(newBookmark);
+      setBookmarks([...bookmarks, bookmark]);
     } catch (error) {
       console.error('Error creating bookmark:', error);
     }
@@ -127,14 +145,11 @@ const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete, onUpdat
     };
 
     try {
-      const response = await api.updateBookmark(bookmark.id, updatedData);
-      if (response.status === 200) {
+      const updated_bookmark = await api.updateBookmark(bookmark.id, updatedData);
+      if (updated_bookmark) {
         // Update bookmarks state in App component
         onUpdate(bookmark.id, updatedData);
         setIsEditing(false);
-      } else {
-        // Handle cases where status code is not 200
-        console.error('Update failed with status code:', response.status);
       }
     } catch (error) {
       console.error('Update bookmark failed:', error);
