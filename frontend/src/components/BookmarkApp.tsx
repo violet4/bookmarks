@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios, {AxiosResponse} from 'axios';
-import { components } from './openapi';
+import { components } from '../openapi';
 type BookmarkCreate = components['schemas']['BookmarkCreate'];
 type MediaType = components['schemas']['MediaType'];
 type Bookmark = components['schemas']['BookmarkOut'];
@@ -17,7 +17,7 @@ namespace api {
   export const createBookmark = async (data: components['schemas']['BookmarkCreate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.post('/bookmarks/', data);
   };
-  
+
   export const getBookmark = async (id: number): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.get(`/bookmarks/${id}`);
   };
@@ -25,14 +25,14 @@ namespace api {
   export const updateBookmark = async (id: number, data: components['schemas']['BookmarkCreate']): Promise<AxiosResponse<components['schemas']['BookmarkOut']>> => {
     return await api.put(`/bookmarks/${id}`, data);
   };
-  
+
   export const deleteBookmark = async (id: number): Promise<AxiosResponse> => {
     return await api.delete(`/bookmarks/${id}`);
   };
-    
+
 }
 
-function App() {
+function BookmarkApp() {
   const [bookmarks, setBookmarks] = useState<components['schemas']['BookmarkOut'][]>([]);
 
   useEffect(() => {
@@ -84,7 +84,7 @@ function App() {
   );
 }
 
-export default App;
+export default BookmarkApp;
 
 
 interface BookmarkListProps {
@@ -128,9 +128,9 @@ const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete, onUpdat
 
     try {
       const response = await api.updateBookmark(bookmark.id, updatedData);
-      if (response.status === 200) { 
+      if (response.status === 200) {
         // Update bookmarks state in App component
-        onUpdate(bookmark.id, updatedData); 
+        onUpdate(bookmark.id, updatedData);
         setIsEditing(false);
       } else {
         // Handle cases where status code is not 200
@@ -178,9 +178,9 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({ onSubmit }) => {
     };
     onSubmit(bookmarkData);
     // ... reset the form fields after submission
-    setName(''); 
-    setMediaType('podcast'); 
-    setBookmarkString(''); 
+    setName('');
+    setMediaType('podcast');
+    setBookmarkString('');
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
