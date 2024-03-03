@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { components } from '../openapi';
+import { components } from '../types/openapi';
 type BookmarkCreate = components['schemas']['BookmarkCreate'];
 type MediaType = components['schemas']['MediaType'];
 type Bookmark = components['schemas']['BookmarkOut'];
@@ -141,7 +141,7 @@ const BookmarkItem: React.FC<BookmarkItemProps> = ({ bookmark, onDelete, onUpdat
     const updatedData: components['schemas']['BookmarkCreate'] = {
       name: editName,
       media_type: bookmark.media_type, // Assuming we don't edit media_type
-      bookmark: editBookmark.split(',').map(Number),
+      bookmark: editBookmark.split(','),
     };
 
     try {

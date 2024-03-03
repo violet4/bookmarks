@@ -36,7 +36,7 @@ class MediaType(StrEnum):
 class BookmarkBase(BaseModel):
     name: str
     media_type: MediaType
-    bookmark: List[int]
+    bookmark: List[int|str]
 
 
 class BookmarkCreate(BookmarkBase):
@@ -119,4 +119,4 @@ async def delete_bookmark(bookmark_id: int, session: AsyncSession = Depends(get_
     await session.delete(bookmark)
     await session.commit()
 
-app.mount("/", StaticFiles(directory='./frontend/build'), name="frontend")
+app.mount("/", StaticFiles(directory='./frontend/dist'), name="frontend")
