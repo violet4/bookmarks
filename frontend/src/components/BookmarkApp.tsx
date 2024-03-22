@@ -6,7 +6,8 @@ type Bookmark = components['schemas']['BookmarkOut'];
 
 
 namespace api {
-  const BASE_URL = 'http://127.0.0.1:8000';
+  // const BASE_URL = 'http://127.0.0.1:8000';
+  const BASE_URL = '';
 
   const headers = {
     'Content-Type': 'application/json',
@@ -189,7 +190,7 @@ const BookmarkForm: React.FC<BookmarkFormProps> = ({ onSubmit }) => {
     const bookmarkData: BookmarkCreate = {
       name,
       media_type: mediaType,
-      bookmark: bookmarkString.split(',').map(Number),
+      bookmark: bookmarkString.split(','),
     };
     onSubmit(bookmarkData);
     // ... reset the form fields after submission
